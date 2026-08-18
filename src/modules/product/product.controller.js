@@ -27,7 +27,21 @@ const getProductBySlug = asyncHandler(
     }
 );
 
+const createProduct = asyncHandler(
+    async (req, res) => {
+        const product =
+            await productService.createProduct(req.body);
+
+        res.status(201).json({
+            success: true,
+            message: "Product created successfully",
+            data: product
+        });
+    }
+);
+
 export default {
     getActiveProducts,
-    getProductBySlug
+    getProductBySlug,
+    createProduct
 };
