@@ -33,6 +33,58 @@ const createProductSchema = z.object({
         .positive("Maximum quantity must be greater than 0")
 });
 
+
+
+const updateProductSchema = z
+    .object({
+        name: z
+            .string()
+            .trim()
+            .min(2)
+            .optional(),
+
+        slug: z
+            .string()
+            .trim()
+            .min(2)
+            .optional(),
+
+        unit: z
+            .string()
+            .trim()
+            .min(1)
+            .optional(),
+
+        pricePerUnit: z
+            .number()
+            .positive()
+            .optional(),
+
+        minQuantity: z
+            .number()
+            .int()
+            .positive()
+            .optional(),
+
+        maxQuantity: z
+            .number()
+            .int()
+            .positive()
+            .optional()
+    })
+    .refine(
+        (data) => Object.keys(data).length > 0,
+        {
+            message: "At least one field is required"
+        }
+    );
+
+const updateProductStatusSchema = z.object({
+    isActive: z.boolean()
+});
+
 export {
-    createProductSchema
+    createProductSchema,
+    updateProductSchema,
+    updateProductStatusSchema
 };

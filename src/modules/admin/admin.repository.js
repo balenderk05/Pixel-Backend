@@ -14,9 +14,13 @@ const findByPhoneWithPassword = async (phone) => {
         .select("+password");
 };
 
+const findById = async (adminId) => {
+    return Admin.findById(adminId);
+};
 
 export default {
     createAdmin,
     findByPhone,
-    findByPhoneWithPassword
+    findByPhoneWithPassword,
+    findById
 };
