@@ -17,6 +17,7 @@ const env = {
     nodeEnv: process.env.NODE_ENV || "development",
     mongodbUri: process.env.MONGODB_URI,
     jwtSecret: process.env.JWT_SECRET,
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || "365d",
     razorpay: {
         keyId:process.env.RAZORPAY_KEY_ID,
         keySecret:process.env.RAZORPAY_KEY_SECRET,
