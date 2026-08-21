@@ -3,16 +3,18 @@ import express from "express";
 import orderController from "./order.controller.js";
 import validate from "../../middleware/validate.middleware.js";
 
-import {
-    createOrderSchema
-} from "./order.validation.js";
+import { createOrderSchema, verifyPaymentSchema } from "./order.validation.js";
 
 const router = express.Router();
 
+router.post("/", validate(createOrderSchema), orderController.createOrder);
+
+router.post("/:id/payment", orderController.createPaymentOrder);
+
 router.post(
-    "/",
-    validate(createOrderSchema),
-    orderController.createOrder
+  "/:id/payment/verify",
+  validate(verifyPaymentSchema),
+  orderController.verifyPayment,
 );
 
 export default router;

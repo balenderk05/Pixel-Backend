@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    />
+
+    <title>Pixel Commerce - Checkout</title>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 700px;
+            margin: 40px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .product {
+            background: #f1f3f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .field {
+            margin-bottom: 15px;
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        .total {
+            font-size: 22px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 7px;
+            background: #111827;
+            color: white;
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>Pixel Commerce</h1>
+
+        <div class="product">
+
+            <h2 id="productName">
+                Premium Pixel
+            </h2>
+
+            <p>
+                Price:
+                ₹<span id="pricePerUnit">850</span>
+                / meter
+            </p>
+
+        </div>
+
+        <div class="field">
+
+            <label>
+                Quantity (Meter)
+            </label>
+
+            <input
+                type="number"
+                id="quantity"
+                value="10"
+                min="1"
+            />
+
+        </div>
+
+        <div class="total">
+
+            Total:
+            ₹<span id="totalAmount">8500</span>
+
+        </div>
+
+        <h3>Customer Details</h3>
+
+        <div class="field">
+
+            <label>Name</label>
+
+            <input
+                type="text"
+                id="name"
+                value="Rahul Kumar"
+            />
+
+        </div>
+
+        <div class="field">
+
+            <label>Phone</label>
+
+            <input
+                type="text"
+                id="phone"
+                value="9876543210"
+            />
+
+        </div>
+
+        <div class="field">
+
+            <label>Address</label>
+
+            <input
+                type="text"
+                id="addressLine1"
+                value="123 Main Road"
+            />
+
+        </div>
+
+        <div class="field">
+
+            <label>Address Line 2</label>
+
+            <input
+                type="text"
+                id="addressLine2"
+                value="Near Market"
+            />
+
+        </div>
+
+        <div class="row">
+
+            <div class="field">
+
+                <label>City</label>
+
+                <input
+                    type="text"
+                    id="city"
+                    value="Karnal"
+                />
+
+            </div>
+
+            <div class="field">
+
+                <label>State</label>
+
+                <input
+                    type="text"
+                    id="state"
+                    value="Haryana"
+                />
+
+            </div>
+
+        </div>
+
+        <div class="field">
+
+            <label>Pincode</label>
+
+            <input
+                type="text"
+                id="pincode"
+                value="132001"
+            />
+
+        </div>
+
+        <button
+            id="buyButton"
+            onclick="buyNow()"
+        >
+            Buy Now
+        </button>
+
+        <div id="message"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+const API_BASE_URL =
+    "http://localhost:5000/api/v1";
+
+const PRODUCT_ID =
+    "6a82fa6df5e0f45d0d03b1d0";
+
+const PRICE_PER_UNIT = 850;
+
+const quantityInput =
+    document.getElementById("quantity");
+
+const totalAmountElement =
+    document.getElementById("totalAmount");
+
+const messageElement =
+    document.getElementById("message");
+
+const buyButton =
+    document.getElementById("buyButton");
+
+
+quantityInput.addEventListener(
+    "input",
+    () => {
+
+        const quantity =
+            Number(quantityInput.value) || 0;
+
+        const total =
+            quantity * PRICE_PER_UNIT;
+
+        totalAmountElement.textContent =
+            total.toLocaleString("en-IN");
+    }
+);
+
+
+const showMessage = (
+    message,
+    isError = false
+) => {
+
+    messageElement.style.display = "block";
+
+    messageElement.textContent =
+        message;
+
+    messageElement.style.background =
+        isError
+            ? "#fee2e2"
+            : "#dcfce7";
+
+    messageElement.style.color =
+        isError
+            ? "#991b1b"
+            : "#166534";
+};
+
+
+const createOrder = async () => {
+
+    const quantity =
+        Number(quantityInput.value);
+
+    const response =
+        await fetch(
+            `${API_BASE_URL}/orders`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    productId: PRODUCT_ID,
+
+                    quantity,
+
+                    customer: {
+
+                        name:
+                            document
+                                .getElementById("name")
+                                .value,
+
+                        phone:
+                            document
+                                .getElementById("phone")
+                                .value,
+
+                        addressLine1:
+                            document
+                                .getElementById("addressLine1")
+                                .value,
+
+                        addressLine2:
+                            document
+                                .getElementById("addressLine2")
+                                .value,
+
+                        city:
+                            document
+                                .getElementById("city")
+                                .value,
+
+                        state:
+                            document
+                                .getElementById("state")
+                                .value,
+
+                        pincode:
+                            document
+                                .getElementById("pincode")
+                                .value
+                    }
+                })
+            }
+        );
+
+    const data =
+        await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.message ||
+            "Order creation failed"
+        );
+    }
+
+    return data.data;
+};
+
+
+const createPaymentOrder =
+    async (orderId) => {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/orders/${orderId}/payment`,
+                {
+                    method: "POST"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Payment order creation failed"
+            );
+        }
+
+        return data.data;
+    };
+
+
+const verifyPayment =
+    async (
+        orderId,
+        paymentResponse
+    ) => {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/orders/${orderId}/payment/verify`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        razorpayPaymentId:
+                            paymentResponse
+                                .razorpay_payment_id,
+
+                        razorpayOrderId:
+                            paymentResponse
+                                .razorpay_order_id,
+
+                        razorpaySignature:
+                            paymentResponse
+                                .razorpay_signature
+                    })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Payment verification failed"
+            );
+        }
+
+        return data.data;
+    };
+
+
+const openRazorpayCheckout =
+    async (
+        order,
+        paymentData
+    ) => {
+
+        const options = {
+
+            key:
+                paymentData.razorpay.keyId,
+
+            amount:
+                paymentData.razorpay.amount,
+
+            currency:
+                paymentData.razorpay.currency,
+
+            name:
+                "Pixel Commerce",
+
+            description:
+                `${order.productName} - ${order.quantity} ${order.unit}`,
+
+            order_id:
+                paymentData.razorpay.orderId,
+
+            prefill: {
+
+                name:
+                    order.customer.name,
+
+                contact:
+                    order.customer.phone
+            },
+
+            theme: {
+                color: "#111827"
+            },
+
+            handler:
+                async function (
+                    response
+                ) {
+
+                    try {
+
+                        showMessage(
+                            "Payment received. Verifying..."
+                        );
+
+                        const verifiedOrder =
+                            await verifyPayment(
+                                order._id,
+                                response
+                            );
+
+                        showMessage(
+                            `Payment successful! Order ${verifiedOrder.orderNumber} is PAID.`
+                        );
+
+                    } catch (error) {
+
+                        console.error(error);
+
+                        showMessage(
+                            error.message,
+                            true
+                        );
+                    }
+                }
+        };
+
+        const razorpay =
+            new Razorpay(options);
+
+        razorpay.on(
+            "payment.failed",
+            function (response) {
+
+                console.error(
+                    "Payment failed:",
+                    response
+                );
+
+                showMessage(
+                    "Payment failed. Please try again.",
+                    true
+                );
+            }
+        );
+
+        razorpay.open();
+    };
+
+
+const buyNow = async () => {
+
+    try {
+
+        buyButton.disabled = true;
+
+        buyButton.textContent =
+            "Creating Order...";
+
+        messageElement.style.display =
+            "none";
+
+        const order =
+            await createOrder();
+
+        buyButton.textContent =
+            "Preparing Payment...";
+
+        const paymentData =
+            await createPaymentOrder(
+                order._id
+            );
+
+        buyButton.textContent =
+            "Opening Checkout...";
+
+        await openRazorpayCheckout(
+            order,
+            paymentData
+        );
+
+        buyButton.textContent =
+            "Buy Now";
+
+        buyButton.disabled = false;
+
+    } catch (error) {
+
+        console.error(error);
+
+        showMessage(
+            error.message,
+            true
+        );
+
+        buyButton.textContent =
+            "Buy Now";
+
+        buyButton.disabled =
+            false;
+    }
+};
+
+</script>
+
+</body>
+</html>

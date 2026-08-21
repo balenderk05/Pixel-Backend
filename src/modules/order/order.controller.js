@@ -1,22 +1,48 @@
 import asyncHandler from "../../utils/asyncHandler.js";
 import orderService from "./order.service.js";
 
-const createOrder = asyncHandler(
-    async (req, res) => {
+const createOrder = asyncHandler(async (req, res) => {
+  const order = await orderService.createOrder(req.body);
 
-        const order =
-            await orderService.createOrder(
-                req.body
-            );
+  res.status(201).json({
+    success: true,
+    message: "Order created successfully",
+    data: order,
+  });
+});
 
-        res.status(201).json({
-            success: true,
-            message: "Order created successfully",
-            data: order
-        });
-    }
-);
+const createPaymentOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const paymentOrder = await orderService.createPaymentOrder(id);
+
+  res.status(200).json({
+    success: true,
+    message: "Razorpay order created successfully",
+    data: paymentOrder,
+  });
+});
+
+const verifyPayment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+
+  const order = await orderService.verifyPayment({
+    orderId: id,
+    razorpayPaymentId,
+    razorpayOrderId,
+    razorpaySignature,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Payment verified successfully",
+    data: order,
+  });
+});
 
 export default {
-    createOrder
+  createOrder,
+  createPaymentOrder,
+  verifyPayment,
 };
