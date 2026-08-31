@@ -7,7 +7,12 @@ const addressSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
     phone: {
       type: String,
       required: true,
@@ -97,7 +102,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-      razorpayOrderId: {
+    razorpayOrderId: {
       type: String,
       unique: true,
       sparse: true,

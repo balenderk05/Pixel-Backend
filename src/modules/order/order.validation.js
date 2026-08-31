@@ -8,6 +8,12 @@ const createOrderSchema = z.object({
   customer: z.object({
     name: z.string().trim().min(2, "Name is required"),
 
+    email: z
+      .string()
+      .trim()
+      .email("Invalid email address")
+      .transform((value) => value.toLowerCase()),
+
     phone: z
       .string()
       .trim()
