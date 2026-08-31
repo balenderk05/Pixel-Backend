@@ -6,6 +6,7 @@ import generateOrderNumber from "../../utils/generateOrderNumber.js";
 import razorpayService from "../../services/razorpay.service.js";
 import env from "../../config/env.js";
 import crypto from "crypto";
+import mongoose from "mongoose";
 const createOrder = async ({ productId, quantity, customer }) => {
   // 1. Find product
   const product = await productRepository.findProductById(productId);
@@ -194,8 +195,47 @@ const verifyPayment = async ({
   return updatedOrder;
 };
 
+const getOrders = async ({ page, limit, status, paymentStatus }) => {
+  const result = await orderRepository.findOrders({
+    page,
+    limit,
+    status,
+    paymentStatus,
+  });
+
+  const totalPages = Math.ceil(result.total / limit);
+
+  return {
+    orders: result.orders,
+
+    pagination: {
+      page,
+      limit,
+      totalOrders: result.total,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
+  };
+};
+
+const getOrderById = async (orderId) => {
+  if (!mongoose.isValidObjectId(orderId)) {
+    throw new AppError("Invalid order ID", 400);
+  }
+
+  const order = await orderRepository.findOrderById(orderId);
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+
+  return order;
+};
 export default {
   createOrder,
   createPaymentOrder,
   verifyPayment,
+  getOrders,
+  getOrderById,
 };

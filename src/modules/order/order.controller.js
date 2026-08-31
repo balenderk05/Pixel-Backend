@@ -41,8 +41,38 @@ const verifyPayment = asyncHandler(async (req, res) => {
   });
 });
 
+const getOrders = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, status, paymentStatus } = req.query;
+
+  const result = await orderService.getOrders({
+    page: Number(page),
+    limit: Number(limit),
+    status,
+    paymentStatus,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Orders fetched successfully",
+    data: result,
+  });
+});
+
+const getOrderById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const order = await orderService.getOrderById(id);
+
+  res.status(200).json({
+    success: true,
+    message: "Order fetched successfully",
+    data: order,
+  });
+});
 export default {
   createOrder,
   createPaymentOrder,
   verifyPayment,
+  getOrders,
+  getOrderById,
 };

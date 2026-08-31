@@ -11,7 +11,7 @@ const findOrderByNumber = async (orderNumber) => {
 };
 
 const findOrderById = async (orderId) => {
-  return Order.findById(orderId);
+  return Order.findById(orderId).lean();
 };
 
 const updateOrderById = async (orderId, updateData) => {
@@ -21,9 +21,34 @@ const updateOrderById = async (orderId, updateData) => {
   });
 };
 
+const findOrders = async ({ page = 1, limit = 10, status, paymentStatus }) => {
+  const skip = (page - 1) * limit;
+
+  const filter = {};
+
+  if (status) {
+    filter.status = status;
+  }
+
+  if (paymentStatus) {
+    filter.paymentStatus = paymentStatus;
+  }
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+
+    Order.countDocuments(filter),
+  ]);
+
+  return {
+    orders,
+    total,
+  };
+};
 export default {
   createOrder,
   findOrderByNumber,
   findOrderById,
   updateOrderById,
+  findOrders,
 };

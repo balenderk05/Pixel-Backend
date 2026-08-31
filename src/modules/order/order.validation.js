@@ -39,4 +39,23 @@ const verifyPaymentSchema = z.object({
   razorpaySignature: z.string().min(1, "Razorpay signature is required"),
 });
 
-export { createOrderSchema, verifyPaymentSchema };
+const getOrdersQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+
+  status: z
+    .enum([
+      "PENDING",
+      "PAYMENT_PENDING",
+      "PAID",
+      "PROCESSING",
+      "READY_FOR_DELIVERY",
+      "DELIVERED",
+      "CANCELLED",
+    ])
+    .optional(),
+
+  paymentStatus: z.enum(["PENDING", "PAID", "FAILED", "REFUNDED"]).optional(),
+});
+export { createOrderSchema, verifyPaymentSchema, getOrdersQuerySchema };

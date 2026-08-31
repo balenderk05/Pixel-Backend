@@ -41,7 +41,7 @@ const updateProduct = async (
             productId
         );
 
-    if (!product || !product.isActive) {
+    if (!product) {
         throw new AppError(
             "Product not found",
             404
@@ -83,7 +83,7 @@ const updateProductStatus = async (
             productId
         );
 
-    if (!product || !product.isActive) {
+    if (!product) {
         throw new AppError(
             "Product not found",
             404

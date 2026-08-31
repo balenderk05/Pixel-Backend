@@ -30,7 +30,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/api/v1", routes);
+app.use("/v1", routes);
 
 app.use((req, res) => {
   res.status(404).json({
