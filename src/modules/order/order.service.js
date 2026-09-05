@@ -1,9 +1,12 @@
 import orderRepository from "./order.repository.js";
 import productRepository from "../product/product.repository.js";
+import notificationService from "../notification/notification.service.js";
+import adminRepository from "../admin/admin.repository.js";
 
 import AppError from "../../utils/appError.js";
 import generateOrderNumber from "../../utils/generateOrderNumber.js";
 import razorpayService from "../../services/razorpay.service.js";
+import emailService from "../../services/email.service.js";
 import env from "../../config/env.js";
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -191,6 +194,121 @@ const verifyPayment = async ({
 
     paymentStatus: "PAID",
   });
+
+  try {
+    const admins = await adminRepository.findActiveAdmins();
+
+    await Promise.all(
+      admins.map((admin) =>
+        notificationService.createNotification({
+          adminId: admin._id,
+          type: "NEW_ORDER",
+
+          title: "New Pixel Order",
+
+          message:
+            `${updatedOrder.customer.name} purchased ` +
+            `${updatedOrder.quantity} ${updatedOrder.unit} ` +
+            `${updatedOrder.productName}`,
+
+          orderId: updatedOrder._id,
+
+          orderNumber: updatedOrder.orderNumber,
+        }),
+      ),
+    );
+
+    console.log(`Admin notification created for ${updatedOrder.orderNumber}`);
+  } catch (error) {
+    console.error(
+      `Failed to create admin notification for ${updatedOrder.orderNumber}:`,
+      error,
+    );
+  }
+  // 12. Send customer order confirmation email
+  try {
+    await emailService.sendOrderConfirmationEmail({
+      customerEmail: updatedOrder.customer.email,
+
+      customerName: updatedOrder.customer.name,
+
+      orderNumber: updatedOrder.orderNumber,
+
+      productName: updatedOrder.productName,
+
+      quantity: updatedOrder.quantity,
+
+      unit: updatedOrder.unit,
+
+      pricePerUnit: updatedOrder.pricePerUnit,
+
+      totalAmount: updatedOrder.totalAmount,
+
+      address: {
+        addressLine1: updatedOrder.customer.addressLine1,
+
+        addressLine2: updatedOrder.customer.addressLine2,
+
+        city: updatedOrder.customer.city,
+
+        state: updatedOrder.customer.state,
+
+        pincode: updatedOrder.customer.pincode,
+      },
+    });
+
+    console.log(
+      `Order confirmation email sent for ${updatedOrder.orderNumber}`,
+    );
+  } catch (error) {
+    // Payment is already successful.
+    // Email failure should NOT fail the payment/order.
+    console.error(
+      `Failed to send order confirmation email for ${updatedOrder.orderNumber}:`,
+      error,
+    );
+  }
+
+  try {
+    await emailService.sendAdminNewOrderEmail({
+      orderNumber: updatedOrder.orderNumber,
+
+      customerName: updatedOrder.customer.name,
+
+      customerEmail: updatedOrder.customer.email,
+
+      customerPhone: updatedOrder.customer.phone,
+
+      productName: updatedOrder.productName,
+
+      quantity: updatedOrder.quantity,
+
+      unit: updatedOrder.unit,
+
+      pricePerUnit: updatedOrder.pricePerUnit,
+
+      totalAmount: updatedOrder.totalAmount,
+
+      address: {
+        addressLine1: updatedOrder.customer.addressLine1,
+
+        addressLine2: updatedOrder.customer.addressLine2,
+
+        city: updatedOrder.customer.city,
+
+        state: updatedOrder.customer.state,
+
+        pincode: updatedOrder.customer.pincode,
+      },
+    });
+
+    console.log(`Admin order email sent for ${updatedOrder.orderNumber}`);
+  } catch (error) {
+    console.error(
+      `Failed to send admin order email for ${updatedOrder.orderNumber}:`,
+      error,
+    );
+  }
 
   return updatedOrder;
 };
