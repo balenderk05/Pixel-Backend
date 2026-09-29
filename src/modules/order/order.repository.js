@@ -45,10 +45,32 @@ const findOrders = async ({ page = 1, limit = 10, status, paymentStatus }) => {
     total,
   };
 };
+
+const updateOrderStatus = async (
+  orderId,
+  { status, estimatedDeliveryDate },
+) => {
+  return Order.findByIdAndUpdate(
+    orderId,
+    {
+      $set: {
+        status,
+        estimatedDeliveryDate: estimatedDeliveryDate
+          ? new Date(`${estimatedDeliveryDate}T00:00:00.000Z`)
+          : null,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+};
 export default {
   createOrder,
   findOrderByNumber,
   findOrderById,
   updateOrderById,
   findOrders,
+  updateOrderStatus,
 };

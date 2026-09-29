@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";                      
 import env from "../config/env.js";
 
 const transporter = nodemailer.createTransport({
@@ -235,8 +235,93 @@ const sendAdminNewOrderEmail = async ({
   });
 };
 
+const sendOrderStatusUpdateEmail = async ({
+  customerEmail,
+  customerName,
+  orderNumber,
+  productName,
+  quantity,
+  unit,
+  orderStatus,
+  estimatedDeliveryDate,
+}) => {
+  const formattedDeliveryDate = estimatedDeliveryDate
+    ? new Date(estimatedDeliveryDate).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "Not available";
+
+  return sendEmail({
+    to: customerEmail,
+
+    subject: `Order Status Updated - ${orderNumber}`,
+
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial, sans-serif;">
+
+        <h2>📦 Order Status Updated</h2>
+
+        <p>
+          Hi <strong>${customerName}</strong>,
+        </p>
+
+        <p>
+          Your order status has been updated successfully.
+        </p>
+
+        <hr />
+
+        <h3>Order Details</h3>
+
+        <p>
+          <strong>Order Number:</strong>
+          ${orderNumber}
+        </p>
+
+        <p>
+          <strong>Product:</strong>
+          ${productName}
+        </p>
+
+        <p>
+          <strong>Quantity:</strong>
+          ${quantity} ${unit}
+        </p>
+
+        <p>
+          <strong>Order Status:</strong>
+          ${orderStatus}
+        </p>
+
+        <p>
+          <strong>Estimated Delivery:</strong>
+          ${formattedDeliveryDate}
+        </p>
+
+        <hr />
+
+        <p>
+          We will notify you again if there are any further updates
+          to your order.
+        </p>
+
+        <p>
+          Thank you for choosing Pixel Commerce.
+        </p>
+
+      </body>
+      </html>
+    `,
+  });
+};
 export default {
   sendEmail,
   sendOrderConfirmationEmail,
   sendAdminNewOrderEmail,
+  sendOrderStatusUpdateEmail,
 };
+            

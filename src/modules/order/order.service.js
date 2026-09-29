@@ -2,7 +2,7 @@ import orderRepository from "./order.repository.js";
 import productRepository from "../product/product.repository.js";
 import notificationService from "../notification/notification.service.js";
 import adminRepository from "../admin/admin.repository.js";
-
+     
 import AppError from "../../utils/appError.js";
 import generateOrderNumber from "../../utils/generateOrderNumber.js";
 import razorpayService from "../../services/razorpay.service.js";
@@ -218,7 +218,7 @@ const verifyPayment = async ({
       ),
     );
 
-    console.log(`Admin notification created for ${updatedOrder.orderNumber}`);
+    // console.log(`Admin notification created for ${updatedOrder.orderNumber}`);
   } catch (error) {
     console.error(
       `Failed to create admin notification for ${updatedOrder.orderNumber}:`,
@@ -257,9 +257,9 @@ const verifyPayment = async ({
       },
     });
 
-    console.log(
-      `Order confirmation email sent for ${updatedOrder.orderNumber}`,
-    );
+    // console.log(
+    //   `Order confirmation email sent for ${updatedOrder.orderNumber}`,
+    // );
   } catch (error) {
     // Payment is already successful.
     // Email failure should NOT fail the payment/order.
@@ -302,7 +302,7 @@ const verifyPayment = async ({
       },
     });
 
-    console.log(`Admin order email sent for ${updatedOrder.orderNumber}`);
+    // console.log(`Admin order email sent for ${updatedOrder.orderNumber}`);
   } catch (error) {
     console.error(
       `Failed to send admin order email for ${updatedOrder.orderNumber}:`,
@@ -350,10 +350,138 @@ const getOrderById = async (orderId) => {
 
   return order;
 };
+
+// Allowed status transitions
+const allowedStatusTransitions = {
+  PENDING: ["PAYMENT_PENDING", "CANCELLED"],
+
+  PAYMENT_PENDING: ["PAID", "PAYMENT_FAILED", "CANCELLED"],
+
+  PAID: ["PROCESSING", "CANCELLED"],
+
+  PROCESSING: ["COMPLETED", "CANCELLED"],
+
+  COMPLETED: [],
+
+  CANCELLED: [],
+
+  PAYMENT_FAILED: [],
+};
+
+// Helper function to send order status email to customer
+const sendOrderStatusEmail = async (order) => {
+  await emailService.sendOrderStatusUpdateEmail({
+    customerEmail: order.customer.email,
+    customerName: order.customer.name,
+    orderNumber: order.orderNumber,
+    productName: order.productName,
+    quantity: order.quantity,
+    unit: order.unit,
+    orderStatus: order.status,
+    estimatedDeliveryDate: order.estimatedDeliveryDate,
+  });
+
+  // console.log(`Order status email sent for ${order.orderNumber}`);
+};
+
+//Helper function to create notifications for all admins when order status changes
+const createOrderStatusNotifications = async (order) => {
+  const admins = await adminRepository.findActiveAdmins();
+
+  await Promise.all(
+    admins.map((admin) =>
+      notificationService.createNotification({
+        adminId: admin._id,
+        type: "ORDER_STATUS_CHANGED",
+        title: "Order Status Updated",
+        message:
+          `${order.orderNumber} status changed to ` +
+          `${order.status} for ` +
+          `${order.customer.name}`,
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+      }),
+    ),
+  );
+
+  // console.log(
+  //     `Admin status notification created for ${order.orderNumber}`
+  // );
+};
+
+const updateOrderStatus = async ({
+  orderId,
+  status,
+  estimatedDeliveryDate,
+}) => {
+  const order = await orderRepository.findOrderById(orderId);
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+
+  const currentStatus = order.status;
+
+  if (currentStatus === status) {
+    throw new AppError(`Order is already in ${status} status`, 400);
+  }
+
+  const allowedStatuses = allowedStatusTransitions[currentStatus] || [];
+
+  if (!allowedStatuses.includes(status)) {
+    throw new AppError(
+      `Cannot change order status from ${currentStatus} to ${status}`,
+      400,
+    );
+  }
+
+  if (estimatedDeliveryDate) {
+    const deliveryDate = new Date(`${estimatedDeliveryDate}T00:00:00.000Z`);
+
+    if (Number.isNaN(deliveryDate.getTime())) {
+      throw new AppError("Invalid estimated delivery date", 400);
+    }
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    if (deliveryDate <= today) {
+      throw new AppError("Estimated delivery date must be in the future", 400);
+    }
+  }
+
+  // 1. Update order first
+  const updatedOrder = await orderRepository.updateOrderStatus(orderId, {
+    status,
+    estimatedDeliveryDate,
+  });
+
+  // 2. Send notifications in background
+  Promise.allSettled([
+    sendOrderStatusEmail(updatedOrder),
+    createOrderStatusNotifications(updatedOrder),
+  ]).then((results) => {
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(
+          index === 0
+            ? `Failed to send status email for ${updatedOrder.orderNumber}:`
+            : `Failed to create admin notification for ${updatedOrder.orderNumber}:`,
+          result.reason,
+        );
+      }
+    });
+  });
+
+  // 3. Return immediately
+  return updatedOrder;
+};
+
 export default {
   createOrder,
   createPaymentOrder,
   verifyPayment,
   getOrders,
   getOrderById,
+  updateOrderStatus,
 };

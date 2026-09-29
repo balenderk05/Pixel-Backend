@@ -120,6 +120,11 @@ const orderSchema = new mongoose.Schema(
       default: null,
     },
 
+    estimatedDeliveryDate: {
+      type: Date,
+      default: null,
+    },
+
     status: {
       type: String,
       enum: [

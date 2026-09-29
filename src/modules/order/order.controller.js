@@ -69,10 +69,25 @@ const getOrderById = asyncHandler(async (req, res) => {
     data: order,
   });
 });
+
+const updateOrderStatus = asyncHandler(async (req, res) => {
+  const order = await orderService.updateOrderStatus({
+    orderId: req.params.id,
+    status: req.body.status,
+    estimatedDeliveryDate: req.body.estimatedDeliveryDate,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Order status updated successfully",
+    data: order,
+  });
+});
 export default {
   createOrder,
   createPaymentOrder,
   verifyPayment,
   getOrders,
   getOrderById,
+  updateOrderStatus,
 };

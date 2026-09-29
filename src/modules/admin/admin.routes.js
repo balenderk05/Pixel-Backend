@@ -7,6 +7,7 @@ import { registerAdminSchema, loginAdminSchema } from "./admin.validation.js";
 
 import { register, login } from "./admin.controller.js";
 import authenticateAdmin from "../../middleware/auth.middleware.js";
+import { updateOrderStatusSchema } from "../order/order.validation.js";
 // import { getOrdersQuerySchema } from "../order/order.validation.js";
 
 const router = express.Router();
@@ -18,5 +19,12 @@ router.post("/login", validate(loginAdminSchema), login);
 router.get("/orders", authenticateAdmin, orderController.getOrders);
 
 router.get("/orders/:id", authenticateAdmin, orderController.getOrderById);
+
+router.patch(
+  "/orders/:id/status",
+  authenticateAdmin,
+  validate(updateOrderStatusSchema),
+  orderController.updateOrderStatus,
+);
 
 export default router;
